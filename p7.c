@@ -1,59 +1,77 @@
-
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
 
-int main() {
-    int p1[2], p2[2], pid;
-    char path[100], data[100];
+int main()
+{
+    int pipe1[2], pipe2[2];
+    char path[256], buffer[1024];
+    ssize_t n;
+    pid_t pid;
 
-    pipe(p1);
-    pipe(p2);
+    if (pipe(pipe1) == -1 || pipe(pipe2) == -1) {
+        perror("pipe");
+        return 1;
+    }
 
-    printf("Enter full path: ");
-    scanf("%99s", path);
+    printf("Enter file path: ");
+    fgets(path, sizeof(path), stdin);
+    path[strcspn(path, "\n")] = '\0';
 
     pid = fork();
 
-    if (pid > 0) {              // Parent
-        close(p1[0]);
-        close(p2[1]);
-
-        write(p1[1], path, strlen(path) + 1);
-        close(p1[1]);
-
-        wait(NULL);
-
-        read(p2[0], data, sizeof(data));
-        printf("***File content***\n%s", data);
-        close(p2[0]);
+    if (pid < 0) {
+        perror("fork");
+        return 1;
     }
-    else if (pid == 0) {        // Child
-        close(p1[1]);
-        close(p2[0]);
 
-        read(p1[0], path, sizeof(path));
-        close(p1[0]);
+    if (pid > 0) {                 /* Parent */
+        close(pipe1[0]);
+        close(pipe2[1]);
 
-        FILE *fp = fopen(path, "r");
+        write(pipe1[1], path, strlen(path) + 1);
+        close(pipe1[1]);
 
-        if (fp == NULL)
-            strcpy(data, "Could not open file...\n");
-        else {
-            int n = fread(data, 1, 99, fp);
-            data[n] = '\0';
-            fclose(fp);
+        printf("\nFile content:\n");
+        while ((n = read(pipe2[0], buffer, sizeof(buffer))) > 0)
+            write(STDOUT_FILENO, buffer, n);
+
+        close(pipe2[0]);
+        wait(NULL);
+    } else {                       /* Child */
+        close(pipe1[1]);
+        close(pipe2[0]);
+
+        n = read(pipe1[0], path, sizeof(path) - 1);
+        close(pipe1[0]);
+
+        if (n <= 0)
+            exit(1);
+
+        path[n] = '\0';
+
+        FILE *file = fopen(path, "r");
+        if (file == NULL) {
+            char message[] = "Could not open file.\n";
+            write(pipe2[1], message, strlen(message));
+        } else {
+            while ((n = fread(buffer, 1, sizeof(buffer), file)) > 0)
+                write(pipe2[1], buffer, n);
+
+            fclose(file);
         }
 
-        write(p2[1], data, strlen(data) + 1);
-        close(p2[1]);
+        close(pipe2[1]);
+        exit(0);
     }
 
     return 0;
 }
 
-/* Run:
-   gcc practical7.c -o practical7
-   ./practical7
-*/
+// Compile:
+// gcc pipe.c -o pipe
+
+// Run:
+// ./pipe
