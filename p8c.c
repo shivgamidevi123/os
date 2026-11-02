@@ -1,73 +1,64 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 
-void sort(int a[], int n) {
-    for(int i = 0; i < n-1; i++)
-        for(int j = 0; j < n-i-1; j++)
-            if(a[j] > a[j+1]) {
-                int t = a[j];
-                a[j] = a[j+1];
-                a[j+1] = t;
-            }
-}
-
-int main() {
-    int a[100], n, head, total = 0, first = -1;
+int main()
+{
+    int RQ[100], n, head, total = 0;
+    int i, j, index = 0, current;
 
     printf("Enter number of requests: ");
     scanf("%d", &n);
 
-    printf("Enter requests: ");
-    for(int i = 0; i < n; i++)
-        scanf("%d", &a[i]);
+    printf("Enter request sequence:\n");
+    for (i = 0; i < n; i++)
+        scanf("%d", &RQ[i]);
 
     printf("Enter initial head position: ");
     scanf("%d", &head);
 
-    sort(a, n);
-
-    printf("\nC-LOOK: %d", head);
-
-    for(int i = 0; i < n; i++) {
-        if(a[i] >= head) {
-            total += abs(head-a[i]);
-            head = a[i];
-            printf(" -> %d", head);
-
-            if(first == -1)
-                first = i;
+    /* Sort requests */
+    for (i = 0; i < n - 1; i++) {
+        for (j = 0; j < n - i - 1; j++) {
+            if (RQ[j] > RQ[j + 1]) {
+                int temp = RQ[j];
+                RQ[j] = RQ[j + 1];
+                RQ[j + 1] = temp;
+            }
         }
     }
 
-    if(first > 0) {
-        total += abs(head-a[0]);
-        head = a[0];
-        printf(" -> %d", head);
+    /* First request at or above the head */
+    while (index < n && RQ[index] < head)
+        index++;
 
-        for(int i = 1; i < first; i++) {
-            total += abs(head-a[i]);
-            head = a[i];
-            printf(" -> %d", head);
-        }
-    }
-    else if(first == -1 && n > 0) {
-        total += abs(head-a[0]);
-        head = a[0];
-        printf(" -> %d", head);
+    current = head;
+    printf("Seek sequence: %d", current);
 
-        for(int i = 1; i < n; i++) {
-            total += abs(head-a[i]);
-            head = a[i];
-            printf(" -> %d", head);
-        }
+    /* Move toward higher requests */
+    for (i = index; i < n; i++) {
+        total += abs(RQ[i] - current);
+        current = RQ[i];
+        printf(" -> %d", current);
     }
 
-    printf("\nTotal Movement = %d\n", total);
+    /* Jump to the lowest request, then continue upward */
+    if (index > 0) {
+        total += abs(current - RQ[0]);
+        current = RQ[0];
+        printf(" -> %d", current);
+
+        for (i = 1; i < index; i++) {
+            total += abs(RQ[i] - current);
+            current = RQ[i];
+            printf(" -> %d", current);
+        }
+    }
+
+    printf("\nTotal head movement: %d\n", total);
     return 0;
 }
+// Compile:
+// gcc cscan.c -o cscan
 
-/* Run:
-   gcc clook.c -o clook
-   ./clook
-*/
+// Run:
+// ./cscan
