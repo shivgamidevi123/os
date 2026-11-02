@@ -1,85 +1,74 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include <time.h>
 
-#define SIZE 5
-
-int buffer[SIZE], count = 0;
+int buffer, count, pdelay, cdelay;
+sem_t empty, full;
 pthread_mutex_t mutex;
-sem_t full, empty;
 
 void *producer(void *arg)
 {
-    int item;
-    while(1)
-    {
-        item = rand() % 100;
+    for (int i = 0; i < count; i++) {
+        int item = rand() % 100 + 1;
 
+        sleep(pdelay);
         sem_wait(&empty);
         pthread_mutex_lock(&mutex);
 
-        buffer[count++] = item;
+        buffer = item;
         printf("Producer produced %d\n", item);
 
         pthread_mutex_unlock(&mutex);
         sem_post(&full);
-        sleep(1);
     }
+    return NULL;
 }
 
 void *consumer(void *arg)
 {
-    int item;
-    while(1)
-    {
+    for (int i = 0; i < count; i++) {
         sem_wait(&full);
         pthread_mutex_lock(&mutex);
 
-        item = buffer[--count];
-        printf("Consumer consumed %d\n", item);
+        printf("Consumer consumed %d\n", buffer);
 
         pthread_mutex_unlock(&mutex);
         sem_post(&empty);
-        sleep(1);
+        sleep(cdelay);
     }
+    return NULL;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
-    int time, p, c;
+    pthread_t p, c;
 
-    if(argc != 4)
-    {
-        printf("Usage: ./a.out time producers consumers\n");
-        return 1;
-    }
+    printf("Enter number of items: ");
+    scanf("%d", &count);
+    printf("Enter producer delay: ");
+    scanf("%d", &pdelay);
+    printf("Enter consumer delay: ");
+    scanf("%d", &cdelay);
+    srand(time(NULL));
 
-    time = atoi(argv[1]);
-    p = atoi(argv[2]);
-    c = atoi(argv[3]);
-
-    pthread_t pt[p], ct[c];
-
-    pthread_mutex_init(&mutex, NULL);
+    sem_init(&empty, 0, 1);
     sem_init(&full, 0, 0);
-    sem_init(&empty, 0, SIZE);
+    pthread_mutex_init(&mutex, NULL);
 
-    for(int i = 0; i < p; i++)
-        pthread_create(&pt[i], NULL, producer, NULL);
+    pthread_create(&p, NULL, producer, NULL);
+    pthread_create(&c, NULL, consumer, NULL);
 
-    for(int i = 0; i < c; i++)
-        pthread_create(&ct[i], NULL, consumer, NULL);
-
-    sleep(time);
-    printf("Exit the program\n");
+    pthread_join(p, NULL);
+    pthread_join(c, NULL);
 
     return 0;
 }
 
-//run :- 
+// Compile:
+// gcc p3.c -o p3 -pthread
 
-//  gcc p3.c -o practical3 -pthread
-//  ./p3 5 2 2
+// Run:
+// ./p3
