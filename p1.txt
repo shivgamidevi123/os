@@ -1,0 +1,86 @@
+// fist type this command on terminal :- nano practical1.sh
+
+// then copy this below code in that file.
+
+
+#!/bin/bash
+
+create() {
+    touch addressbook.txt
+    echo "Address Book Created"
+}
+
+insert() {
+    echo "Enter last,first,email,phone:"
+    read record
+    echo "$record" >> addressbook.txt
+    echo "Record Inserted"
+}
+
+view() {
+    echo "Enter last name:"
+    read name
+    grep "^$name" addressbook.txt || echo "No records found"
+}
+
+modify() {
+    echo "Enter search name:"
+    read name
+    grep -n "$name" addressbook.txt
+
+    echo "Enter line number:"
+    read line
+    echo "Enter new record:"
+    read record
+
+    sed -i "${line}s/.*/$record/" addressbook.txt
+    echo "Record Updated"
+}
+
+delete() {
+    echo "Enter search name:"
+    read name
+    grep -n "$name" addressbook.txt
+
+    echo "Enter line number:"
+    read line
+
+    sed -i "${line}d" addressbook.txt
+    echo "Record Deleted"
+}
+
+search() {
+    echo "Enter name to search:"
+    read name
+    grep "$name" addressbook.txt || echo "No records found"
+}
+
+while true
+do
+    echo "===== ADDRESS BOOK ====="
+    echo "1. Create"
+    echo "2. Insert"
+    echo "3. View"
+    echo "4. Modify"
+    echo "5. Delete"
+    echo "6. Search"
+    echo "7. Exit"
+
+    read choice
+
+    case $choice in
+        1) create ;;
+        2) insert ;;
+        3) view ;;
+        4) modify ;;
+        5) delete ;;
+        6) search ;;
+        7) exit ;;
+        *) echo "Invalid choice" ;;
+    esac
+done
+
+
+
+// run :-  chmod +x p1.sh 
+           ./p1.sh
