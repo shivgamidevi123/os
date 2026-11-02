@@ -1,59 +1,48 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 
-void sort(int a[], int n) {
-    for(int i = 0; i < n-1; i++)
-        for(int j = 0; j < n-i-1; j++)
-            if(a[j] > a[j+1]) {
-                int t = a[j];
-                a[j] = a[j+1];
-                a[j+1] = t;
-            }
-}
+int main()
+{
+    int RQ[100], done[100] = {0};
+    int n, head, total = 0, i;
 
-int main() {
-    int a[100], n, head, size, total = 0;
-
-    printf("Enter number of requests: ");
+    printf("Enter the number of requests: ");
     scanf("%d", &n);
 
-    printf("Enter requests: ");
-    for(int i = 0; i < n; i++)
-        scanf("%d", &a[i]);
+    printf("Enter the request sequence:\n");
+    for (i = 0; i < n; i++)
+        scanf("%d", &RQ[i]);
 
-    printf("Enter head position and disk size: ");
-    scanf("%d%d", &head, &size);
+    printf("Enter initial head position: ");
+    scanf("%d", &head);
 
-    sort(a, n);
+    printf("Seek sequence: %d", head);
 
-    printf("\nSCAN: %d", head);
+    for (int count = 0; count < n; count++) {
+        int index = -1;
 
-    for(int i = 0; i < n; i++) {
-        if(a[i] >= head) {
-            total += abs(head-a[i]);
-            head = a[i];
-            printf(" -> %d", head);
+        for (i = 0; i < n; i++) {
+            if (!done[i] &&
+                (index == -1 ||
+                 abs(RQ[i] - head) < abs(RQ[index] - head) ||
+                 (abs(RQ[i] - head) == abs(RQ[index] - head) &&
+                  RQ[i] > RQ[index]))) {
+                index = i;
+            }
         }
+
+        total += abs(RQ[index] - head);
+        head = RQ[index];
+        done[index] = 1;
+
+        printf(" -> %d", head);
     }
 
-    total += abs(head-(size-1));
-    head = size-1;
-    printf(" -> %d", head);
-
-    for(int i = n-1; i >= 0; i--) {
-        if(a[i] < head) {
-            total += abs(head-a[i]);
-            head = a[i];
-            printf(" -> %d", head);
-        }
-    }
-
-    printf("\nTotal Movement = %d\n", total);
+    printf("\nTotal head movement: %d\n", total);
     return 0;
 }
+// Compile:
+// gcc sstf.c -o sstf
 
-/* Run:
-   gcc scan.c -o scan
-   ./scan
-*/
+// Run:
+// ./sstf
