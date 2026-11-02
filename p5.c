@@ -1,81 +1,68 @@
-
+// Banker's Algorithm
 #include <stdio.h>
 
 int main()
 {
-    int n, m, i, j, k = 0, flag;
+    int n = 5, m = 3;
+    int alloc[5][3] = {
+        {0, 1, 0},
+        {2, 0, 0},
+        {3, 0, 2},
+        {2, 1, 1},
+        {0, 0, 2}
+    };
 
-    printf("Enter number of processes: ");
-    scanf("%d", &n);
+    int max[5][3] = {
+        {7, 5, 3},
+        {3, 2, 2},
+        {9, 0, 2},
+        {2, 2, 2},
+        {4, 3, 3}
+    };
 
-    printf("Enter number of resources: ");
-    scanf("%d", &m);
+    int avail[3] = {3, 3, 2};
+    int need[5][3], finish[5] = {0}, safe[5];
+    int i, j, count = 0, found;
 
-    int a[n][m], max[n][m], need[n][m];
-    int avail[m], work[m], finish[n], safe[n];
+    for (i = 0; i < n; i++)
+        for (j = 0; j < m; j++)
+            need[i][j] = max[i][j] - alloc[i][j];
 
-    printf("Enter Allocation Matrix:\n");
-    for(i=0;i<n;i++)
-        for(j=0;j<m;j++)
-            scanf("%d",&a[i][j]);
+    while (count < n) {
+        found = 0;
 
-    printf("Enter Maximum Matrix:\n");
-    for(i=0;i<n;i++)
-        for(j=0;j<m;j++)
-            scanf("%d",&max[i][j]);
+        for (i = 0; i < n; i++) {
+            if (finish[i] == 0) {
+                for (j = 0; j < m; j++)
+                    if (need[i][j] > avail[j])
+                        break;
 
-    printf("Enter Available Resources:\n");
-    for(j=0;j<m;j++)
-        scanf("%d",&avail[j]);
+                if (j == m) {
+                    for (j = 0; j < m; j++)
+                        avail[j] += alloc[i][j];
 
-    for(i=0;i<n;i++) {
-        finish[i]=0;
-        for(j=0;j<m;j++)
-            need[i][j]=max[i][j]-a[i][j];
-    }
-
-    for(j=0;j<m;j++)
-        work[j]=avail[j];
-
-    while(k<n) {
-        flag=0;
-
-        for(i=0;i<n;i++) {
-            if(finish[i]==0) {
-                int possible=1;
-
-                for(j=0;j<m;j++)
-                    if(need[i][j]>work[j])
-                        possible=0;
-
-                if(possible) {
-                    for(j=0;j<m;j++)
-                        work[j]+=a[i][j];
-
-                    safe[k++]=i;
-                    finish[i]=1;
-                    flag=1;
+                    safe[count++] = i;
+                    finish[i] = 1;
+                    found = 1;
                 }
             }
         }
 
-        if(flag==0)
-            break;
+        if (found == 0) {
+            printf("System is not in a safe state.\n");
+            return 0;
+        }
     }
 
-    if(k==n) {
-        printf("\nSystem is SAFE\nSafe Sequence: ");
-
-        for(i=0;i<n;i++)
-            printf("P%d ",safe[i]);
-    }
-    else
-        printf("\nSystem is UNSAFE\n");
+    printf("System is in a safe state.\nSafe sequence: ");
+    for (i = 0; i < n; i++)
+        printf("P%d%s", safe[i], i == n - 1 ? "\n" : " -> ");
 
     return 0;
 }
 
+// Compile:
+// gcc banker.c -o banker
 
-// run :-
-//  gcc p5.c -o p5
-//  ./p5
+// Run:
+// ./banker
