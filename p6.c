@@ -1,35 +1,40 @@
 // 6th a :- client
 #include <stdio.h>
 #include <string.h>
-#include <fcntl.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 
 int main()
 {
-    int fd;
-    char buff[1024], result[1024];
+    int fd, n;
+    char buff[1024] = "", line[256], result[1024];
 
     mkfifo("myfifo1", 0666);
     mkfifo("myfifo2", 0666);
 
-    printf("Enter the sentences: ");
-    fgets(buff, sizeof(buff), stdin);
+    printf("Enter sentences (finish with Ctrl+D):\n");
+
+    while (fgets(line, sizeof(line), stdin) != NULL) {
+        if (strlen(buff) + strlen(line) >= sizeof(buff) - 1) {
+            printf("Input is too long.\n");
+            return 1;
+        }
+        strcat(buff, line);
+    }
 
     fd = open("myfifo1", O_WRONLY);
-    write(fd, buff, strlen(buff)+1);
+    write(fd, buff, strlen(buff));
     close(fd);
-
-    printf("Data sent to server.\n");
-
-    printf("Press Enter after server execution...\n");
-    getchar();
 
     fd = open("myfifo2", O_RDONLY);
-    read(fd, result, sizeof(result));
+    n = read(fd, result, sizeof(result) - 1);
     close(fd);
 
-    printf("***RESULT***\n%s", result);
+    if (n > 0) {
+        result[n] = '\0';
+        printf("\nResult:\n%s", result);
+    }
 
     return 0;
 }
@@ -38,44 +43,63 @@ int main()
 
 #include <stdio.h>
 #include <string.h>
-#include <fcntl.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/stat.h>
+#include <ctype.h>
 
 int main()
 {
-    int fd, ch=0, w=0, l=0;
-    char buff[1024];
-    char result[100];
+    int fd, n, chars = 0, words = 0, lines = 0, inside = 0;
+    char buff[1024], result[1024];
 
     mkfifo("myfifo1", 0666);
     mkfifo("myfifo2", 0666);
 
     fd = open("myfifo1", O_RDONLY);
-    read(fd, buff, sizeof(buff));
+    n = read(fd, buff, sizeof(buff) - 1);
     close(fd);
 
-    for(int i=0; buff[i]!='\0'; i++)
-    {
-        if((buff[i]>='a' && buff[i]<='z') ||
-           (buff[i]>='A' && buff[i]<='Z'))
-            ch++;
+    if (n <= 0)
+        return 1;
 
-        if(buff[i]==' ' || buff[i]=='\n')
-            w++;
+    buff[n] = '\0';
+    printf("Data received from client:\n%s\n", buff);
 
-        if(buff[i]=='\n')
-            l++;
+    for (int i = 0; i < n; i++) {
+        if (buff[i] != '\n')
+            chars++;
+
+        if (buff[i] == '\n')
+            lines++;
+
+        if (isspace((unsigned char)buff[i]))
+            inside = 0;
+        else if (!inside) {
+            words++;
+            inside = 1;
+        }
     }
 
-    sprintf(result, "Char count:%d\nWord count:%d\nLine count:%d\n",
-            ch, w, l);
+    if (buff[n - 1] != '\n')
+        lines++;
+
+    FILE *fp = fopen("opfile.txt", "w");
+    fprintf(fp, "Characters: %d\nWords: %d\nLines: %d\n",
+            chars, words, lines);
+    fclose(fp);
+
+    fp = fopen("opfile.txt", "r");
+    n = fread(result, 1, sizeof(result) - 1, fp);
+    fclose(fp);
+    result[n] = '\0';
 
     fd = open("myfifo2", O_WRONLY);
-    write(fd, result, strlen(result)+1);
+    write(fd, result, strlen(result));
     close(fd);
 
-    printf("Data sent to client.\n");
+    printf("Characters: %d\nWords: %d\nLines: %d\n", chars, words, lines);
+    printf("Result saved in opfile.txt and sent to client.\n");
 
     return 0;
 }
